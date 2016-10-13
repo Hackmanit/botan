@@ -251,7 +251,7 @@ void TLS_CBC_HMAC_AEAD_Decryption::cbc_decrypt_record(byte record_contents[], si
    {
    BOTAN_ASSERT(record_len % block_size() == 0,
                 "Buffer is an even multiple of block size");
-
+   
    const size_t blocks = record_len / block_size();
 
    BOTAN_ASSERT(blocks >= 1, "At least one ciphertext block");
@@ -283,6 +283,43 @@ size_t TLS_CBC_HMAC_AEAD_Decryption::output_length(size_t) const
    * We don't know this because the padding is arbitrary
    */
    return 0;
+   }
+
+/*
+* This function performs additional compression calls in order 
+* to protect from the Lucky 13 attack. It implements the countermeasure 
+* as described in the original Lucky13 paper, Section 7, and adds 
+* new compression function calls over dummy data.
+* 
+* One SHA-1/SHA-256 compression is performed with 64 bytes of data.
+* 
+* Note that the padding validation in Botan is always performed over
+* min(plen,256) bytes, see the function check_tls_padding. This differs
+* from the countermeasure described in the paper.
+* 
+* Note that the padding length padlen does also count the last byte
+* of the decrypted plaintext. This is different from the typical 
+* padding computation and different from the Lucky 13 paper.
+* 
+* TODO: countermeasure with SHA-384
+* 
+* plen represents the length of the decrypted plaintext message P
+* padlen represents the padding length
+* 
+*/
+void TLS_CBC_HMAC_AEAD_Decryption::perform_additional_compressions(size_t plen, size_t padlen)
+   {
+   const uint16_t L1 = 13 + plen - tag_size();
+   // Here the Lucky 13 paper is different because the padlen length in the paper 
+   // does not count the last message byte.
+   const uint16_t L2 = 13 + plen - padlen - tag_size();
+   // From the paper: |compress|=ceil((L1-55)/64)-ceil((L2-55)/64)
+   // ceil((L1-55)/64) = floor((L1+8)/64)
+   const uint16_t comp = ((L1+8)/64) - ((L2+8)/64);
+   
+   std::unique_ptr<Botan::MessageAuthenticationCode> dmac(Botan::MessageAuthenticationCode::create(mac().name()));
+   secure_vector<byte> data(55+64*comp);
+   dmac->update(unlock(data));
    }
 
 void TLS_CBC_HMAC_AEAD_Decryption::finish(secure_vector<byte>& buffer, size_t offset)
@@ -393,6 +430,7 @@ void TLS_CBC_HMAC_AEAD_Decryption::finish(secure_vector<byte>& buffer, size_t of
          }
       else
          {
+         perform_additional_compressions(record_len, pad_size);
          throw TLS_Exception(Alert::BAD_RECORD_MAC, "Message authentication failure");
          }
       }
