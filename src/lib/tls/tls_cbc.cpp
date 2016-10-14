@@ -13,6 +13,7 @@
 #include <botan/tls_alert.h>
 #include <botan/tls_magic.h>
 #include <botan/tls_exceptn.h>
+#include <time.h>
 
 namespace Botan {
 
@@ -252,6 +253,8 @@ void TLS_CBC_HMAC_AEAD_Decryption::cbc_decrypt_record(byte record_contents[], si
    BOTAN_ASSERT(record_len % block_size() == 0,
                 "Buffer is an even multiple of block size");
    
+//   printf("\n ---- Decrypting record ----");
+
    const size_t blocks = record_len / block_size();
 
    BOTAN_ASSERT(blocks >= 1, "At least one ciphertext block");
@@ -318,8 +321,28 @@ void TLS_CBC_HMAC_AEAD_Decryption::perform_additional_compressions(size_t plen, 
    const uint16_t comp = ((L1+8)/64) - ((L2+8)/64);
    
    std::unique_ptr<Botan::MessageAuthenticationCode> dmac(Botan::MessageAuthenticationCode::create(mac().name()));
-   secure_vector<byte> data(64*comp+1);
-   dmac->update(unlock(data));
+   // dummy aad
+   uint8_t max = plen-tag_size()+13;
+   uint8_t min = (max-block_size() > 0) ? max-block_size() : 0;
+   uint8_t update_bytes = max - padlen - block_size();
+   byte data[max];
+   // dummy update
+   if(comp != 0)
+      {
+      // full dummy mac computation
+      dmac->update(data, max);
+      }
+   else 
+      {
+      // computation with one less compression invocation
+      dmac->update(data, min);
+      }
+   std::vector<byte> mac_buf(tag_size());
+   dmac->final(mac_buf);
+   struct timespec t;
+   t.tv_sec = 0;
+   t.tv_nsec = rand()%(100000);
+   nanosleep(&t, NULL);
    }
 
 void TLS_CBC_HMAC_AEAD_Decryption::finish(secure_vector<byte>& buffer, size_t offset)
