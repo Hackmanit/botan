@@ -1,44 +1,10 @@
 Symmetric Cryptographic Algorithms
 ===========================================
-Basic Algorithm Abilities
----------------------------------
-
-There are a small handful of functions implemented by most of Botan's
-algorithm objects. Among these are:
-
-.. cpp:function:: std::string name()
-
-  Returns a human-readable string of the name of this
-  algorithm. Examples of names returned are "AES-128" and
-  "HMAC(SHA-512)". You can turn names back into algorithm objects using
-  the functions in ``lookup.h``.
-
-.. cpp:function:: void clear()
-
-  Clear out the algorithm's internal state. A block cipher object will
-  "forget" its key, a hash function will "forget" any data put into it,
-  etc. The object will look and behave as it did when you initially
-  allocated it.
-
-.. cpp:function:: T* clone()
-
-  The ``clone`` has many different return types, such as
-  ``BlockCipher``\* and ``HashFunction``\*, depending on what kind of
-  object it is called on. Note that unlike Java's clone, this returns a
-  new object in a "pristine" state; that is, operations done on the
-  initial object before calling ``clone`` do not affect the initial
-  state of the new clone.
-
-  Cloned objects can (and should) be deallocated with the C++ ``delete``
-  operator.
-
-Symmetrically Keyed Cryptographic Algorithms
-------------------------------------------------------
 Block ciphers, stream ciphers and MACs are all keyed operations.
-Thus they require a particular key, which is a chosen, sampled or computed
+They require a particular key, which is a chosen, sampled or computed
 string of bits of a specified length. The length required by any particular algorithm
 may vary, depending on both the algorithm specification and the implementation.
-You can query any botan object to find out what key length(s) it supports.
+You can query any Botan object to find out what key length(s) it supports.
 
 To make this similarity in terms of keying explicit, all algorithms of
 those types are derived from the :cpp:class:`SymmetricAlgorithm` base.
@@ -76,10 +42,10 @@ restrictions on the size of the key.
      algorithm.
 
 Block Ciphers
-^^^^^^^^^^^^^^^^^^^^^^^^
+---------------------------------
 A block cipher is a deterministic symmetric encryption algorithm, which
 encrypts data of a fixed length, called block size. All block ciphers classes
-in botan are subclasses of :cpp:class:`BlockCipher` defined in `botan/block_cipher.h`.
+in Botan are subclasses of :cpp:class:`BlockCipher` defined in `botan/block_cipher.h`.
 As a symmetrically keyed algorithm, it subclasses the :cpp:class:`SymmetricAlgorithm` interface.
 Note that a block cipher by itself is only secure for plaintext with the length of a single block.
 When processing data larger than a single block, a block cipher mode should be used for data processing.
@@ -109,7 +75,7 @@ When processing data larger than a single block, a block cipher mode should be u
 
   .. cpp:function:: void encrypt(std::vector<byte> inout) const
 
-    Encrypts a single or multiple full blocks in place.
+    Encrypt a single or multiple full blocks in place.
     Acts like :cpp:func:`encrypt_n`\ (inout.data(), inout.data(), inout.size()/ block_size()).
 
   .. cpp:function:: void encrypt(byte* block) const
@@ -199,7 +165,7 @@ plaintext with AES-256 using two different keys.
        }
 
 Stream Ciphers
-^^^^^^^^^^^^^^^
+---------------------------------
 In contrast to block ciphers, stream ciphers operate on a plaintext stream instead
 of blocks. Thus encrypting data results in changing the internal state of the
 cipher and encryption of plaintext with arbitrary length is possible in one go (in byte
@@ -228,7 +194,7 @@ stream ciphers require a fresh initialisation vector.
 
     Processes *n* bytes plain/ciphertext from *in* and writes the result to *out*.
 
-  .. cpp:function:: cipher1(byte* inout, size_t n)
+  .. cpp:function:: void cipher1(byte* inout, size_t n)
 
     Processes *n* bytes plain/ciphertext in place. Acts like :cpp:func:`cipher`\ (inout, inout, n).
 
@@ -252,7 +218,7 @@ The following code encrypts a provided plaintext using ChaCha20.
 
 
 Message Authentication Codes (MAC)
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+----------------------------------
 A Message Authentication Code algorithm computes a tag over a message utilizing a shared secret key.
 Thus a valid tag confirms the authenticity and integrity of the associated data.
 Only entities in possesion of the shared secret key are able to verify the tag.
@@ -288,8 +254,8 @@ The Botan MAC computation is split into five stages.
 
   .. cpp:function:: void start(const byte* nonce, size_t nonce_len)
 
-    Set the IV for the MAC calculation. Note that not all MAC algorithms require a IV.
-    If a IV is required, the function has to be called before the data is processed.
+    Set the IV for the MAC calculation. Note that not all MAC algorithms require an IV.
+    If an IV is required, the function has to be called before the data is processed.
 
   .. cpp:function:: void update(const byte* input, size_t length)
   .. cpp:function:: void update(const secure_vector<byte>& in)
