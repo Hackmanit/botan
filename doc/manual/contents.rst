@@ -11,6 +11,7 @@ Contents
    secmem
    rng
    filters
+   hash
    pubkey
    mceliece
    x509
