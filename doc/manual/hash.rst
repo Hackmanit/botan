@@ -77,7 +77,7 @@ CLI Example
 
 Code Example
 ------------
-Assume we want to calculate the SHA-1, Whirlpool and SHA-3 hash digests of the STDIN stream using the botan library.
+Assume we want to calculate the SHA-1, Whirlpool and SHA-3 hash digests of the STDIN stream using the Botan library.
 
 .. code-block:: cpp
 
