@@ -1,5 +1,5 @@
 Symmetric Cryptographic Algorithms
-=================================
+===========================================
 Basic Algorithm Abilities
 ---------------------------------
 
@@ -283,6 +283,7 @@ The Botan MAC computation is split into five stages.
 .. cpp:class:: MessageAuthenticationCode
 
   .. cpp:function:: void set_key(const byte* key, size_t length)
+
     Set the shared MAC key for the calculation. This function has to be called before the data is processed.
 
   .. cpp:function:: void start(const byte* nonce, size_t nonce_len)
