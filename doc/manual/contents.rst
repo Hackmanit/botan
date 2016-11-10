@@ -12,6 +12,7 @@ Contents
    rng
    filters
    hash
+   symmetric_crypto
    pubkey
    mceliece
    x509

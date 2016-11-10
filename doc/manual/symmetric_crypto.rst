@@ -180,23 +180,23 @@ plaintext with AES-256 using two different keys.
     #include <botan/hex.h>
     #include <iostream>
     int main ()
-        {
-        std::vector<uint8_t> key = Botan::hex_decode("000102030405060708090A0B0C0D0E0F101112131415161718191A1B1C1D1E1F");
-        std::vector<uint8_t> block = Botan::hex_decode("00112233445566778899AABBCCDDEEFF");
-        std::unique_ptr<Botan::BlockCipher> cipher(Botan::BlockCipher::create("AES-256"));
-        cipher->set_key(key);
-        cipher->encrypt(block);
-        std::cout << endl <<cipher->name() << "single block encrypt: " << Botan::hex_encode(block);
+       {
+       std::vector<uint8_t> key = Botan::hex_decode("000102030405060708090A0B0C0D0E0F101112131415161718191A1B1C1D1E1F");
+       std::vector<uint8_t> block = Botan::hex_decode("00112233445566778899AABBCCDDEEFF");
+       std::unique_ptr<Botan::BlockCipher> cipher(Botan::BlockCipher::create("AES-256"));
+       cipher->set_key(key);
+       cipher->encrypt(block);
+       std::cout << endl <<cipher->name() << "single block encrypt: " << Botan::hex_encode(block);
 
-        //clear cipher for 2nd encryption with other key
-        cipher->clear();
-        key = Botan::hex_decode("1337133713371337133713371337133713371337133713371337133713371337");
-        cipher->set_key(key);
-        cipher->encrypt(block);
+       //clear cipher for 2nd encryption with other key
+       cipher->clear();
+       key = Botan::hex_decode("1337133713371337133713371337133713371337133713371337133713371337");
+       cipher->set_key(key);
+       cipher->encrypt(block);
 
-        std::cout << endl << cipher->name() << "single block encrypt: " << Botan::hex_encode(block);
-        return 0;
-        }
+       std::cout << endl << cipher->name() << "single block encrypt: " << Botan::hex_encode(block);
+       return 0;
+       }
 
 Stream Ciphers
 ^^^^^^^^^^^^^^^
@@ -324,25 +324,25 @@ The following example code computes a AES-256 GMAC and subsequently verifies the
     #include <iostream>
 
     int main()
-        {
-        const std::vector<uint8_t> key = Botan::hex_decode("1337133713371337133713371337133713371337133713371337133713371337");
-        const std::vector<uint8_t> iv = Botan::hex_decode("FFFFFFFFFFFFFFFFFFFFFFFF");
-        const std::vector<uint8_t> data = Botan::hex_decode("6BC1BEE22E409F96E93D7E117393172A");
-        std::unique_ptr<Botan::MessageAuthenticationCode> mac(Botan::MessageAuthenticationCode::create("GMAC(AES-256)"));
-        if(!mac)
-           return 1;
-        mac->set_key(key);
-        mac->start(iv);
-        mac->update(data);
-        Botan::secure_vector<uint8_t> tag = mac->final();
-        std::cout << mac->name() << ": " << Botan::hex_encode(tag) << endl;
+       {
+       const std::vector<uint8_t> key = Botan::hex_decode("1337133713371337133713371337133713371337133713371337133713371337");
+       const std::vector<uint8_t> iv = Botan::hex_decode("FFFFFFFFFFFFFFFFFFFFFFFF");
+       const std::vector<uint8_t> data = Botan::hex_decode("6BC1BEE22E409F96E93D7E117393172A");
+       std::unique_ptr<Botan::MessageAuthenticationCode> mac(Botan::MessageAuthenticationCode::create("GMAC(AES-256)"));
+       if(!mac)
+          return 1;
+       mac->set_key(key);
+       mac->start(iv);
+       mac->update(data);
+       Botan::secure_vector<uint8_t> tag = mac->final();
+       std::cout << mac->name() << ": " << Botan::hex_encode(tag) << endl;
 
-        //Verify created MAC
-        mac->start(iv);
-        mac->update(data);
-        std::cout << "Verification: " << (mac->verify_mac(tag) ? "success" : "failure");
-        return 0;
-        }
+       //Verify created MAC
+       mac->start(iv);
+       mac->update(data);
+       std::cout << "Verification: " << (mac->verify_mac(tag) ? "success" : "failure");
+       return 0;
+       }
 
 The following example code computes a valid AES-128 CMAC tag and modifies the data to demonstrate a MAC verification failure.
 
@@ -353,19 +353,19 @@ The following example code computes a valid AES-128 CMAC tag and modifies the da
   #include <iostream>
 
     int main()
-        {
-        const std::vector<uint8_t> key = Botan::hex_decode("2B7E151628AED2A6ABF7158809CF4F3C");
-        std::vector<uint8_t> data = Botan::hex_decode("6BC1BEE22E409F96E93D7E117393172A");
-        std::unique_ptr<Botan::MessageAuthenticationCode> mac(Botan::MessageAuthenticationCode::create("CMAC(AES-128)"));
-        if(!mac)
-           return 1;
-        mac->set_key(key);
-        mac->update(data);
-        Botan::secure_vector<uint8_t> tag = mac->final();
-        //Corrupting data
-        data.back()++;
-        //Verify with corrupted data
-        mac->update(data);
-        std::cout << "Verification with malformed data: " << (mac->verify_mac(tag) ? "success" : "failure");
-        return 0;
-        }
+       {
+       const std::vector<uint8_t> key = Botan::hex_decode("2B7E151628AED2A6ABF7158809CF4F3C");
+       std::vector<uint8_t> data = Botan::hex_decode("6BC1BEE22E409F96E93D7E117393172A");
+       std::unique_ptr<Botan::MessageAuthenticationCode> mac(Botan::MessageAuthenticationCode::create("CMAC(AES-128)"));
+       if(!mac)
+          return 1;
+       mac->set_key(key);
+       mac->update(data);
+       Botan::secure_vector<uint8_t> tag = mac->final();
+       //Corrupting data
+       data.back()++;
+       //Verify with corrupted data
+       mac->update(data);
+       std::cout << "Verification with malformed data: " << (mac->verify_mac(tag) ? "success" : "failure");
+       return 0;
+       }
