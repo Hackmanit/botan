@@ -164,6 +164,208 @@ plaintext with AES-256 using two different keys.
        return 0;
        }
 
+Modes of Operation
+---------------------------
+A block cipher by itself, is only able to securely encrypt a single data block.
+To be able to securely encrypt data of arbitrary length, a mode of operation applies
+the block cipher's single block operation repeatedly on a padded plaintext.
+Botan implements the following block cipher padding schemes
+
+PKCS#7 [RFC5652]
+  The last byte in the padded block defines the padding length p, the remaining padding bytes are set to p as well.
+ANSI X9.23
+  The last byte in the padded block defines the padding length, the remaining padding is filled with 0x00.
+ISO/IEC 7816-4
+  The first padding byte is set to 0x80, the remaining padding bytes are set to 0x00.
+
+and offers the following unauthenticated modes of operation:
+
+#. ECB (Electronic Codebook Mode)
+#. CBC (Cipher Block Chaining Mode)
+#. CFB (Cipher Feedback Mode)
+#. XTS (XEX-based tweaked-codebook mode with ciphertext stealing)
+#. OFB (Output Feedback Mode)
+#. CTR (Counter Mode)
+
+The classes :cpp:class:`ECB_Mode`, :cpp:class:`CBC_Mode`, :cpp:class:`CFB_Mode` and :cpp:class:`XTS_Mode` are
+are derived from the base class :cpp:class:`Cipher_Mode`, which is declared in ``botan/cipher_mode.h``.
+
+.. cpp:class:: Cipher_Mode
+
+  .. cpp:function:: void set_key(const SymmetricKey& key)
+  .. cpp:function:: void set_key(const byte* key, size_t length)
+
+    Set the symmetric key to be used.
+
+  .. cpp:function:: void start_msg(const byte* nonce, size_t nonce_len)
+
+    Set the IV (unique per-message nonce) of the mode of operation and prepare for message processing.
+
+  .. cpp:function:: void start(const std::vector<byte> nonce)
+
+    Acts like :cpp:func:`start_msg`\ (nonce.data(), nonce.size()).
+
+  .. cpp:function:: void start(const byte* nonce, size_t nonce_len)
+
+    Acts like :cpp:func:`start_msg`\ (nonce, nonce_len).
+
+  .. cpp:function:: virtual size_t update_granularity() const
+
+    The :cpp:class:`Cipher_Mode` interface requires message processing in multiples of the block size.
+    Returns size of required blocks to update and 1, if the mode can process messages of any length.
+
+  .. cpp:function:: virtual size_t process(byte* msg, size_t msg_len)
+
+    Process msg in place and returns bytes written. msg must be a multiple of :cpp:func:`update_granularity`.
+
+  .. cpp:function:: void update(secure_vector<byte>& buffer, size_t offset = 0)
+
+    Continue processing a message in the buffer in place. The passed buffer's size must be a multiple of :cpp:func:`update_granularity`.
+    The first *offset* bytes of the buffer will be ignored.
+
+  .. cpp:function:: size_t minimum_final_size() const
+
+    Returns the minimum size needed for :cpp:func:`finish`.
+
+  .. cpp:function:: void finish(secure_vector<byte>& final_block, size_t offset = 0)
+
+    Finalize the message processing with a final block of at least :cpp:func:`minimum_final_size` size.
+    The first *offset* bytes of the passed final block will be ignored.
+
+Note that :cpp:class:`CTR_BE` and :cpp:class:`OFB` are derived from the base class :cpp:class:`StreamCipher` and thus act like a stream cipher.
+The class :cpp:class:`StreamCipher` is described in the respective section.
+
+
+Code Example
+"""""""""""""""""""""
+The following code encrypts the specified plaintext using AES-128/CBC with PKCS#7 padding.
+
+.. code-block:: cpp
+
+    #include <botan/rng.h>
+    #include <botan/auto_rng.h>
+    #include <botan/cipher_mode.h>
+    #include <botan/hex.h>
+    #include <iostream>
+
+    int main()
+       {
+       std::string plaintext("Your great-grandfather gave this watch to your granddad for good luck. Unfortunately, Dane's luck wasn't as good as his old man's.");
+       Botan::secure_vector<uint8_t> pt(plaintext.data(),plaintext.data()+plaintext.length());
+    	 const std::vector<uint8_t> key = Botan::hex_decode("2B7E151628AED2A6ABF7158809CF4F3C");
+    	 std::unique_ptr<Botan::Cipher_Mode> enc(Botan::get_cipher_mode("AES-128/CBC/PKCS7", Botan::ENCRYPTION));
+    	 enc->set_key(key);
+
+    	 //generate fresh nonce (IV)
+       std::unique_ptr<Botan::RandomNumberGenerator> rng(new Botan::AutoSeeded_RNG);
+       std::vector<uint8_t> iv(enc->default_nonce_length());
+       rng->randomize(iv.data(),iv.size());
+       enc->start(iv);
+       enc->finish(pt);
+       std::cout << std::endl << enc->name() << " with iv " << Botan::hex_encode(iv) << std::endl << Botan::hex_encode(pt);
+       return 0;
+       }
+
+
+AEAD Modes of Operation
+---------------------------
+
+.. versionadded:: 1.11.3
+
+AEAD (Authenticated Encryption with Associated Data) modes provide message
+encryption, message authentication, and the ability to authenticate additional
+data that is not included in the ciphertext (such as a sequence number or
+header). It is a subclass of :cpp:class:`Symmetric_Algorithm`.
+
+The AEAD interface can be used directly, or as part of the filter system by
+using :cpp:class:`AEAD_Filter` (a subclass of :cpp:class:`Keyed_Filter` which
+will be returned by :cpp:func:`get_cipher` if the named cipher is an AEAD mode).
+
+AEAD modes currently available include GCM, OCB, EAX, SIV and CCM. All
+support a 128-bit block cipher such as AES. EAX and SIV also support
+256 and 512 bit block ciphers.
+
+.. cpp:class:: AEAD_Mode
+
+  .. cpp:function:: void set_key(const SymmetricKey& key)
+
+       Set the key
+
+  .. cpp:function:: Key_Length_Specification key_spec() const
+
+       Return the key length specification
+
+  .. cpp:function:: void set_associated_data(const byte ad[], size_t ad_len)
+
+       Set any associated data for this message. For maximum portability between
+       different modes, this must be called after :cpp:func:`set_key` and before
+       :cpp:func:`start`.
+
+       If the associated data does not change, it is not necessary to call this
+       function more than once, even across multiple calls to :cpp:func:`start`
+       and :cpp:func:`finish`.
+
+  .. cpp:function:: void start(const byte nonce[], size_t nonce_len)
+
+       Start processing a message, using *nonce* as the unique per-message
+       value.
+
+  .. cpp:function:: void update(secure_vector<byte>& buffer, size_t offset = 0)
+
+       Continue processing a message. The *buffer* is an in/out parameter and
+       may be resized. In particular, some modes require that all input be
+       consumed before any output is produced; with these modes, *buffer* will
+       be returned empty.
+
+       On input, the buffer must be sized in blocks of size
+       :cpp:func:`update_granularity`. For instance if the update granularity
+       was 64, then *buffer* could be 64, 128, 192, ... bytes.
+
+       The first *offset* bytes of *buffer* will be ignored (this allows in
+       place processing of a buffer that contains an initial plaintext header)
+
+  .. cpp:function:: void finish(secure_vector<byte>& buffer, size_t offset = 0)
+
+       Complete processing a message with a final input of *buffer*, which is
+       treated the same as with :cpp:func:`update`. It must contain at least
+       :cpp:func:`final_minimum_size` bytes.
+
+       Note that if you have the entire message in hand, calling finish without
+       ever calling update is both efficient and convenient.
+
+       .. note::
+          During decryption, finish will throw an instance of Integrity_Failure
+          if the MAC does not validate. If this occurs, all plaintext previously
+          output via calls to update must be destroyed and not used in any
+          way that an attacker could observe the effects of.
+
+          One simply way to assure this could never happen is to never
+          call update, and instead always marshall the entire message
+          into a single buffer and call finish on it when decrypting.
+
+  .. cpp:function:: size_t update_granularity() const
+
+       The AEAD interface requires :cpp:func:`update` be called with blocks of
+       this size. This will be 1, if the mode can process any length inputs.
+
+  .. cpp:function:: size_t final_minimum_size() const
+
+       The AEAD interface requires :cpp:func:`finish` be called with at least
+       this many bytes (which may be zero, or greater than
+       :cpp:func:`update_granularity`)
+
+  .. cpp:function:: bool valid_nonce_length(size_t nonce_len) const
+
+       Returns true if *nonce_len* is a valid nonce length for this scheme. For
+       EAX and GCM, any length nonces are allowed. OCB allows any value between
+       8 and 15 bytes.
+
+  .. cpp:function:: size_t default_nonce_length() const
+
+       Returns a reasonable length for the nonce, typically either 96
+       bits, or the only supported length for modes which don't
+       support 96 bit nonces.
+
 Stream Ciphers
 ---------------------------------
 In contrast to block ciphers, stream ciphers operate on a plaintext stream instead
@@ -257,7 +459,7 @@ The base class ``MessageAuthenticationCode`` (in ``botan/mac.h``) implements the
 :cpp:class:`SymmetricAlgorithm` and :cpp:class:`BufferedComputation` (see Hash).
 
 .. note::
-    Avoid MAC-then-encrypt if possible and use .
+    Avoid MAC-then-encrypt if possible and use encrypt-then-MAC.
 
 Currently the following MAC algorithms are available in Botan:
 
@@ -307,7 +509,7 @@ The Botan MAC computation is split into five stages.
 
   .. cpp:function:: bool verify_mac(const byte* mac, size_t length)
 
-    Finalize the current MAC computation and compare the result to the passed ``mac[]``. Returns ``true``, if the verification is successfull and false otherwise.
+    Finalize the current MAC computation and compare the result to the passed ``mac``. Returns ``true``, if the verification is successfull and false otherwise.
 
 
 Code Example

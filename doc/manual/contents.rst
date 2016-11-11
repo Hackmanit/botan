@@ -19,7 +19,6 @@ Contents
    ocsp
    tls
    credentials_manager
-   aead
    bigint
    lowlevel
    kdf
