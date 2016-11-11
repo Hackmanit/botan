@@ -41,7 +41,7 @@ call
   A constructor that creates a new random RSA private key with a modulus
   of length *bits*.
 
-Algorithms based on the discrete-logarithm problem uses what is called a
+Algorithms based on the discrete-logarithm problem use what is called a
 *group*; a group can safely be used with many keys, and for some operations,
 like key agreement, the two keys *must* use the same group.  There are
 currently two kinds of discrete logarithm groups supported in botan: the
@@ -404,6 +404,19 @@ The decryption classes are named ``PK_Decryptor``, ``PK_Decryptor_EME``, and
 the private key, and the processing function is named ``decrypt``.
 
 
+Botan implements the following encryption algorithms and padding schemes:
+
+1. RSA
+    - "PKCS1v15" || "EME-PKCS1-v1_5"
+    - "OAEP" || "EME-OAEP" || "EME1" || "EME1(SHA-1)" || "EME1(SHA-256)"
+
+
+Code Example
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+TODO: Example for "EME1(SHA-256)"
+
+
 Signatures
 ---------------------------------
 
@@ -498,8 +511,22 @@ Signatures are verified using
       on *msg* and then calling :cpp:func:`PK_Verifier::check_signature`
       on *sig*.
 
+Botan implements the following signature algorithms:
+
+1. RSA
+#. DSA
+#. ECDSA
+#. ECGDSA
+#. ECKDSA
+#. GOST 34.10-2001
+#. Nyberg-Rueppel
+#. Rabin-Williams
+
+
 Code Example
-""""""""""""""
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+TODO: example with ECDSA
 
 
 Key Agreement
@@ -542,3 +569,91 @@ key agreement algorithm. It returns a ``secure_vector<byte>``.
 in new applications. The X9.42 algorithm may be useful in some
 circumstances, but unless you need X9.42 compatibility, KDF2 is easier
 to use.
+
+
+Botan implements the following key agreement methods:
+
+1. ECDH
+#. DH
+#. DLIES
+#. ECIES
+
+
+Code Example
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+TODO: ECDH key exchange example
+
+
+eXtended Merkle Signature Scheme (XMSS)
+----------------------------------------
+
+Botan implements the single tree version of  the eXtended Merkle Signature 
+Scheme (XMSS) using Winternitz One Time Signatures+ (WOTS+). The implementation 
+is based on IETF Internet-Draft "XMSS: Extended Hash-Based Signatures".
+
+XMSS uses the Botan interfaces for public key cryptography. 
+The following algorithms are implemented:
+
+1. XMSS_SHA2-256_W16_H10
+#. XMSS_SHA2-256_W16_H16
+#. XMSS_SHA2-256_W16_H20
+#. XMSS_SHA2-512_W16_H10
+#. XMSS_SHA2-512_W16_H16
+#. XMSS_SHA2-512_W16_H20
+#. XMSS_SHAKE128_W16_H10
+#. XMSS_SHAKE128_W16_H10
+#. XMSS_SHAKE128_W16_H10
+#. XMSS_SHAKE256_W16_H10
+#. XMSS_SHAKE256_W16_H10
+#. XMSS_SHAKE256_W16_H10
+
+
+Code Example
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+The following code snippet shows a minimum example on how to create an XMSS 
+public/private key pair and how to use these keys to create and verify a signature:
+
+.. code-block:: cpp
+
+    #include "botan/botan.h"
+    #include "botan/auto_rng.h"
+    #include "botan/xmss.h"
+
+    int main()
+       {
+       // Create a random number generator used for key generation.
+       Botan::AutoSeeded_RNG rng;
+
+       // create a new public/private key pair using SHA2 256 as hash
+       // function and a tree height of 10.
+       Botan::XMSS_PrivateKey private_key(
+          Botan::XMSS_Parameters::xmss_algorithm_t::XMSS_SHA2_256_W16_H10,
+          rng);
+       Botan::XMSS_PublicKey public_key(private_key);
+
+       // create signature operation using the private key.
+       std::unique_ptr<Botan::PK_Ops::Signature> sig_op = 
+          private_key.create_signature_op(rng, "", "");
+
+       // create and sign a message using the signature operation.
+       Botan::secure_vector<byte> msg { 0x01, 0x02, 0x03, 0x04 };
+       sig_op->update(msg.data(), msg.size());
+       Botan::secure_vector<byte> sig = sig_op->sign(rng);
+
+       // create verification operation using the public key
+       std::unique_ptr<Botan::PK_Ops::Verification> ver_op =
+          public_key.create_verification_op("", "");
+
+       // verify the signature for the previously generated message.
+       ver_op->update(msg.data(), msg.size());
+       if(ver_op->is_valid_signature(sig.data(), sig.size()))
+          {
+          std::cout << "Success." << std::endl;
+          }
+       else
+          {
+          std::cout << "Error." << std::endl;
+          }
+       }
