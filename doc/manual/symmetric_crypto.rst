@@ -1,4 +1,4 @@
-Symmetric Cryptographic Algorithms
+Symmetric Key Cryptography
 ===========================================
 Block ciphers, stream ciphers and MACs are all keyed operations.
 They require a particular key, which is a chosen, sampled or computed

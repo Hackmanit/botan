@@ -1,5 +1,5 @@
-Hash Functions
-====================
+Hash Functions and Checksums
+=============================
 Hash functions are one-way functions, which map data of arbitrary size
 to a fixed output length. The class :cpp:class:`HashFunction` is derived from
 the base class :cpp:class:`BufferedComputation` and defined in `botan/hash.h`.
@@ -44,11 +44,11 @@ A Botan :cpp:class:`BufferedComputation` is split into three stages:
 
 Botan implements the following hash algorithms:
 
-1. checksums:
+1. Checksums:
     - Adler32
     - CRC24
     - CRC32
-#. cryptographic hash functions:
+#. Cryptographic hash functions:
     - BLAKE2
     - GOST-34.11
     - Keccak-1600
@@ -107,3 +107,15 @@ Assume we want to calculate the SHA-1, Whirlpool and SHA-3 hash digests of the S
        std::cout << "SHA-3: " << Botan::hex_encode(hash3->final()) << std::endl;
        return 0;
        }
+
+
+A Note on Checksums
+--------------------
+
+Checksums are very similar to hash functions, and in fact share the
+same interface. But there are some significant differences, the major
+ones being that the output size is very small (usually in the range of
+2 to 4 bytes), and is not cryptographically secure. But for their
+intended purpose (error checking), they perform very well. Some
+examples of checksums included in Botan are the Adler32 and CRC32
+checksums.
