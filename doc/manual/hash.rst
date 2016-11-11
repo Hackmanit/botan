@@ -101,8 +101,8 @@ Assume we want to calculate the SHA-1, Whirlpool and SHA-3 hash digests of the S
           hash2->update(buf.data(),readcount);
           hash3->update(buf.data(),readcount);
           }
-       std::cout << "SHA-1: " << Botan::hex_encode(hash1->final()) << endl;
-       std::cout << "Whirlpool: " << Botan::hex_encode(hash2->final()) << endl;
-       std::cout << "SHA-3: " << Botan::hex_encode(hash3->final()) << endl;
+       std::cout << "SHA-1: " << Botan::hex_encode(hash1->final()) << std::endl;
+       std::cout << "Whirlpool: " << Botan::hex_encode(hash2->final()) << std::endl;
+       std::cout << "SHA-3: " << Botan::hex_encode(hash3->final()) << std::endl;
        return 0;
        }

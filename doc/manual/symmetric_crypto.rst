@@ -152,7 +152,7 @@ plaintext with AES-256 using two different keys.
        std::unique_ptr<Botan::BlockCipher> cipher(Botan::BlockCipher::create("AES-256"));
        cipher->set_key(key);
        cipher->encrypt(block);
-       std::cout << endl <<cipher->name() << "single block encrypt: " << Botan::hex_encode(block);
+       std::cout << std::endl <<cipher->name() << "single block encrypt: " << Botan::hex_encode(block);
 
        //clear cipher for 2nd encryption with other key
        cipher->clear();
@@ -160,7 +160,7 @@ plaintext with AES-256 using two different keys.
        cipher->set_key(key);
        cipher->encrypt(block);
 
-       std::cout << endl << cipher->name() << "single block encrypt: " << Botan::hex_encode(block);
+       std::cout << std::endl << cipher->name() << "single block encrypt: " << Botan::hex_encode(block);
        return 0;
        }
 
@@ -214,6 +214,37 @@ Botan provides the following stream ciphers:
 Code Example
 """"""""""""""
 The following code encrypts a provided plaintext using ChaCha20.
+
+.. code-block:: cpp
+
+    #include <botan/stream_cipher.h>
+    #include <botan/rng.h>
+    #include <botan/auto_rng.h>
+    #include <botan/hex.h>
+    #include <iostream>
+
+
+    int main()
+       {
+       std::string plaintext("This is a tasty burger!");
+       std::vector<uint8_t> pt(plaintext.data(),plaintext.data()+plaintext.length());
+       const std::vector<uint8_t> key = Botan::hex_decode("000102030405060708090A0B0C0D0E0F101112131415161718191A1B1C1D1E1F");
+       std::unique_ptr<Botan::StreamCipher> cipher(Botan::StreamCipher::create("ChaCha"));
+
+       //generate fresh nonce (IV)
+       std::unique_ptr<Botan::RandomNumberGenerator> rng(new Botan::AutoSeeded_RNG);
+       std::vector<uint8_t> iv(8);
+       rng->randomize(iv.data(),iv.size());
+
+       //set key and IV
+       cipher->set_key(key);
+       cipher->set_iv(iv.data(),iv.size());
+       std::cout << std::endl << cipher->name() << " with iv " << Botan::hex_encode(iv) << std::endl;
+       cipher->encipher(pt);
+       std::cout << Botan::hex_encode(pt);
+
+       return 0;
+       }
 
 
 
@@ -301,7 +332,7 @@ The following example code computes a AES-256 GMAC and subsequently verifies the
        mac->start(iv);
        mac->update(data);
        Botan::secure_vector<uint8_t> tag = mac->final();
-       std::cout << mac->name() << ": " << Botan::hex_encode(tag) << endl;
+       std::cout << mac->name() << ": " << Botan::hex_encode(tag) << std::endl;
 
        //Verify created MAC
        mac->start(iv);
