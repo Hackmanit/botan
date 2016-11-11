@@ -20,7 +20,7 @@ reference to a ``Public_Key``, it can take any public key or private key, and
 similiarly for ``Private_Key``.
 
 Types of ``Public_Key`` include ``RSA_PublicKey``, ``DSA_PublicKey``,
-``ECDSA_PublicKey``, ``DH_PublicKey``, ``ECDH_PublicKey``, ``RW_PublicKey``,
+``ECDSA_PublicKey``, ``ECKCDSA_PublicKey``, ``ECGDSA_PublicKey``, ``DH_PublicKey``, ``ECDH_PublicKey``, ``RW_PublicKey``,
 ``NR_PublicKey``,, and ``GOST_3410_PublicKey``.  There are cooresponding
 ``Private_Key`` classes for each of these algorithms.
 
@@ -75,6 +75,12 @@ Finally, given an ``EC_Group`` object, you can create a new ECDSA,
 ECDH, or GOST 34.10-2001 private key with
 
 .. cpp:function:: ECDSA_PrivateKey::ECDSA_PrivateKey(RandomNumberGenerator& rng, \
+   const EC_Group& domain, const BigInt& x = 0)
+
+.. cpp:function:: ECKCDSA_PrivateKey::ECKCDSA_PrivateKey(RandomNumberGenerator& rng, \
+      const EC_Group& domain, const BigInt& x = 0)
+
+.. cpp:function:: ECGDSA_PrivateKey::ECGDSA_PrivateKey(RandomNumberGenerator& rng, \
    const EC_Group& domain, const BigInt& x = 0)
 
 .. cpp:function:: ECDH_PrivateKey::ECDH_PrivateKey(RandomNumberGenerator& rng, \
@@ -282,6 +288,31 @@ You can reload a serialized group using
 
 .. cpp:function:: void DL_Group::PEM_decode(DataSource& source)
 
+Code Example
+"""""""""""""""""
+The example below creates a new 2048 bit ``DL_Group``, prints the generated
+parameters and ANSI_X9_42 encodes the created group for further usage.
+
+.. code-block:: cpp
+
+    #include <botan/dl_group.h>
+    #include <botan/auto_rng.h>
+    #include <botan/rng.h>
+    #include <iostream>
+
+    int main()
+       {
+    	  std::unique_ptr<Botan::RandomNumberGenerator> rng(new Botan::AutoSeeded_RNG);
+    	  std::unique_ptr<Botan::DL_Group> group(new Botan::DL_Group(*rng.get(), Botan::DL_Group::Strong, 2048));
+    	  std::cout << "Generated: " << std::endl << "p: " << group->get_p();
+    	  std::cout << std::endl << "q: " << group->get_q();
+    	  std::cout << std::endl << "g: " << group->get_q();
+    	  std::cout << std::endl << "ANSI_X9_42: " << std::endl << group->PEM_encode(Botan::DL_Group::ANSI_X9_42);
+
+        return 0;
+       }
+
+
 .. _ec_group:
 
 EC_Group
@@ -386,7 +417,7 @@ Signature generation is performed using
 
      Constructs a new signer object for the private key *key* using the
      signature format *emsa*. The key must support signature operations.  In
-     the current version of the library, this includes RSA, DSA, ECDSA, GOST
+     the current version of the library, this includes RSA, DSA, ECDSA, ECKCDSA, ECGDSA, GOST
      34.10-2001, Nyberg-Rueppel, and Rabin-Williams. Other signature schemes
      may be supported in the future.
 
@@ -399,7 +430,7 @@ Signature generation is performed using
 
      For RSA, use EMSA4 (also called PSS) unless you need compatibility with
      software that uses the older PKCS #1 v1.5 standard, in which case use
-     EMSA3 (also called "EMSA-PKCS1-v1_5"). For DSA, ECDSA, GOST 34.10-2001,
+     EMSA3 (also called "EMSA-PKCS1-v1_5"). For DSA, ECDSA, ECKCDSA, ECGDSA GOST 34.10-2001,
      and Nyberg-Rueppel, you should use EMSA1.
 
      The *format* defaults to ``IEEE_1363`` which is the only available
@@ -466,6 +497,10 @@ Signatures are verified using
       These are equivalent to calling :cpp:func:`PK_Verifier::update`
       on *msg* and then calling :cpp:func:`PK_Verifier::check_signature`
       on *sig*.
+
+Code Example
+""""""""""""""
+
 
 Key Agreement
 ---------------------------------
