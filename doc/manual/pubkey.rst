@@ -291,7 +291,7 @@ You can reload a serialized group using
 Code Example
 """""""""""""""""
 The example below creates a new 2048 bit ``DL_Group``, prints the generated
-parameters and ANSI_X9_42 encodes the created group for further usage.
+parameters and ANSI_X9_42 encodes the created group for further usage with DH.
 
 .. code-block:: cpp
 
@@ -304,7 +304,7 @@ parameters and ANSI_X9_42 encodes the created group for further usage.
        {
     	  std::unique_ptr<Botan::RandomNumberGenerator> rng(new Botan::AutoSeeded_RNG);
     	  std::unique_ptr<Botan::DL_Group> group(new Botan::DL_Group(*rng.get(), Botan::DL_Group::Strong, 2048));
-    	  std::cout << "Generated: " << std::endl << "p: " << group->get_p();
+    	  std::cout << std::endl << "p: " << group->get_p();
     	  std::cout << std::endl << "q: " << group->get_q();
     	  std::cout << std::endl << "g: " << group->get_q();
     	  std::cout << std::endl << "ANSI_X9_42: " << std::endl << group->PEM_encode(Botan::DL_Group::ANSI_X9_42);
