@@ -58,6 +58,7 @@ Botan implements the following hash algorithms:
     - SHA-1
     - SHA-2 (SHA-224, SHA-256, SHA-384, SHA-512-256)
     - SHA-3
+    - SHAKE (SHAKE-128, SHAKE-256)
     - Skein-512
     - Tiger
     - Whirlpool
