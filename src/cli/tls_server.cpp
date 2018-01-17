@@ -14,6 +14,7 @@
 #include <botan/tls_policy.h>
 #include <botan/hex.h>
 #include <botan/internal/os_utils.h>
+#include <botan/ec_group_custom.h>
 
 #include <list>
 #include <fstream>
@@ -26,7 +27,7 @@ namespace Botan_CLI {
 class TLS_Server final : public Command, public Botan::TLS::Callbacks
    {
    public:
-      TLS_Server() : Command("tls_server cert key --port=443 --type=tcp --policy= --dump-traces=")
+      TLS_Server() : Command("tls_server cert key --port=443 --type=tcp --policy= --curves= --dump-traces=")
          {
          init_sockets();
          }
@@ -51,6 +52,21 @@ class TLS_Server final : public Command, public Botan::TLS::Callbacks
 
          m_is_tcp = (transport == "tcp");
 
+         std::string curves_file = get_arg("curves");
+         std::unique_ptr<Botan::EC_Group_Text> curves;
+
+         if(curves_file.size() > 0)
+            {
+            std::ifstream curves_stream(curves_file);
+            if(!curves_stream.good())
+               {
+               error_output() << "Failed reading curves file\n";
+               return;
+               }
+            curves.reset(new Botan::EC_Group_Text(curves_stream));
+            curves->add_curves(rng());
+            }
+         
          std::unique_ptr<Botan::TLS::Policy> policy;
          const std::string policy_file = get_arg("policy");
          if(policy_file.size() > 0)

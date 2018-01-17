@@ -16,6 +16,7 @@
 #include <botan/ocsp.h>
 #include <botan/hex.h>
 #include <botan/parsing.h>
+#include <botan/ec_group_custom.h>
 #include <fstream>
 
 #if defined(BOTAN_HAS_TLS_SQLITE3_SESSION_MANAGER)
@@ -34,7 +35,7 @@ class TLS_Client final : public Command, public Botan::TLS::Callbacks
    {
    public:
       TLS_Client()
-         : Command("tls_client host --port=443 --print-certs --policy= "
+         : Command("tls_client host --port=443 --print-certs --policy= --curves="
                    "--tls1.0 --tls1.1 --tls1.2 "
                    "--session-db= --session-db-pass= --next-protocols= --type=tcp")
          {
@@ -69,6 +70,21 @@ class TLS_Client final : public Command, public Botan::TLS::Callbacks
             session_mgr.reset(new Botan::TLS::Session_Manager_In_Memory(rng()));
             }
 
+         std::string curves_file = get_arg("curves");
+         std::unique_ptr<Botan::EC_Group_Text> curves;
+
+         if(curves_file.size() > 0)
+            {
+            std::ifstream curves_stream(curves_file);
+            if(!curves_stream.good())
+               {
+               error_output() << "Failed reading curves file\n";
+               return;
+               }
+            curves.reset(new Botan::EC_Group_Text(curves_stream));
+            curves->add_curves(rng());
+            }
+         
          std::string policy_file = get_arg("policy");
 
          std::unique_ptr<Botan::TLS::Policy> policy;
